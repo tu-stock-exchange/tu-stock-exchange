@@ -1,11 +1,16 @@
 #download dependecies pip install pytest httpx
 #pytest from backeend directory to run tests
+import sys
+from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from backend.main import app #check it
+BACKEND_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(BACKEND_ROOT))
+
+from main import app #check it
 from app.db.database import Base
 from app.db.dependencies import get_db
 
