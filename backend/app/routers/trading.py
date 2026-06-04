@@ -33,6 +33,15 @@ def get_current_price(ticker: str) -> float:
         raise HTTPException(status_code=404, detail=f"Unknown problem")
     return round(price, 2)
 
+"""
+Searches for a ticker of a given company
+
+Args:
+    q (str): name of the Company.
+
+Returns:
+    JSON af all companies that user was probably looking for
+"""
 @router.get("/search")
 def search_ticker(q: str):
     try:
@@ -41,6 +50,12 @@ def search_ticker(q: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+"""
+Searches for a ticker of a given company
+
+Returns:
+    JSON of 20 companies with most actives(I am not sure how can i do this function) 
+"""
 @router.get("/popular")
 def search_popular_tickers():
     try:
@@ -75,14 +90,18 @@ def check():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+"""
+Gets all user Tickers and updates the price  every day 
+
+Returns:
+    JSON of 20 companies with most actives(I am not sure how can i do this function) 
+"""
 def update_price_history():
     # 1. get all tickers from your portfolios in DB
     # tickers = get_all_tickers_from_db()# get users tickets from db
     tickers = ["AAPL", "META"]
-    # 2. download latest price history
     data = yf.download(tickers, period="1d")
 
-    # 3. save to DB or cache
     for ticker in tickers:
         print("Running update_price_history...")
         price = data["Close"][ticker].iloc[-1]
@@ -123,10 +142,12 @@ Returns:
     str: history of the day with: "Date", "Open", "High", "Low", "Close", "Volume", "Dividends", "Stock Splits".
 """
 @router.get("/{ticker}/{period}")
-def get_ticker_history(ticker: str, period: int):
+def get_ticker_history(ticker: str, period: str):
     try:
         ticker_data = yf.Ticker(ticker)
-        ticker_history = ticker_data.history(f"{period}mo")
+        ticker_history = ticker_data.history(period)
+        if ticker_history.empty:
+            raise HTTPException(status_code=404, detail=f"Wrong ticker:{ticker} or period:{period}")
     except AttributeError:
         raise HTTPException(status_code=404, detail=f"Ticker: {ticker} not found")
     return ticker_history.reset_index().to_dict(orient="records")
