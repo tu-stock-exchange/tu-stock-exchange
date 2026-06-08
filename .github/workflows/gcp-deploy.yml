@@ -1,18 +1,17 @@
-name: Auto-Deploy to GCP
+name: Deploy to Cloud Run
 
 on:
   push:
     branches: [main]
-  # Uncomment for manual triggering
-  # workflow_dispatch:
 
 env:
-  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-  REGION: us-central1
-  BACKEND_SERVICE: stock_exchange_backend
-  FRONTEND_SERVICE: stock_exchange_frontend
-  DB_INSTANCE: stock_exchange_db
-  REDIS_INSTANCE: stock_exchange_redis
+  PROJECT_ID: ${{ secrets.PROJECT_ID }}
+  REGION: europe-north1
+  BACKEND_SERVICE: stock-exchange-backend
+  FRONTEND_SERVICE: stock-exchange-frontend
+  # These are your Cloud SQL instance connection name and Redis private IP
+  DB_INSTANCE_CONNECTION_NAME: ${{ secrets.DB_INSTANCE_CONNECTION_NAME }}   # format: project:region:instance
+  REDIS_PRIVATE_IP: ${{ secrets.REDIS_PRIVATE_IP }}
 
 jobs:
   deploy:
@@ -22,91 +21,59 @@ jobs:
       id-token: write
 
     steps:
-      # 1. Check out code
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      # 2. Authenticate with GCP
-      - name: Authenticate to Google Cloud
+      - name: Authenticate to GCP
         uses: google-github-actions/auth@v1
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
 
-      # 3. Set up Docker
-      - name: Set up Docker
-        uses: docker/setup-qemu-action@v3
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
 
-      # 4. Build and push Docker images
-      - name: Build and push backend image
-        uses: docker/build-push-action@v5
-        with:
-          context: ./backend
-          push: true
-          tags: gcr.io/${{ env.PROJECT_ID }}/${{ env.BACKEND_SERVICE }}:latest
-          cache-from: type=registry,ref=gcr.io/${{ env.PROJECT_ID }}/${{ env.BACKEND_SERVICE }}:latest
-          cache-to: type=registry,ref=gcr.io/${{ env.PROJECT_ID }}/${{ env.BACKEND_SERVICE }}:latest,mode=max
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
 
-      - name: Build and push frontend image
-        uses: docker/build-push-action@v5
-        with:
-          context: ./frontend
-          push: true
-          tags: gcr.io/${{ env.PROJECT_ID }}/${{ env.FRONTEND_SERVICE }}:latest
-          cache-from: type=registry,ref=gcr.io/${{ env.PROJECT_ID }}/${{ env.FRONTEND_SERVICE }}:latest
-          cache-to: type=registry,ref=gcr.io/${{ env.PROJECT_ID }}/${{ env.FRONTEND_SERVICE }}:latest,mode=max
+      # Build and push backend
+      - name: Build backend image
+        run: |
+          docker build -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/backend/stock-backend:${{ github.sha }} ./backend
+          docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/backend/stock-backend:${{ github.sha }}
 
-      # 5. Deploy to Cloud Run
+      # Build and push frontend
+      - name: Build frontend image
+        run: |
+          docker build -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/frontend/stock-frontend:${{ github.sha }} ./frontend
+          docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/frontend/stock-frontend:${{ github.sha }}
+
+      # Deploy backend
       - name: Deploy backend to Cloud Run
         run: |
           gcloud run deploy ${{ env.BACKEND_SERVICE }} \
-            --image gcr.io/${{ env.PROJECT_ID }}/${{ env.BACKEND_SERVICE }}:latest \
+            --image ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/backend/stock-backend:${{ github.sha }} \
             --region ${{ env.REGION }} \
             --platform managed \
             --port 8000 \
             --allow-unauthenticated \
-            --set-env-vars "DATABASE_URL=${{ secrets.DATABASE_URL }}" \
-            --set-env-vars "REDIS_URL=redis://${{ env.REDIS_INSTANCE }}:6379" \
-            --set-env-vars "SECRET_KEY=${{ secrets.SECRET_KEY }}" \
-            --set-env-vars "ALGORITHM=HS256" \
-            --set-env-vars "ACCESS_TOKEN_EXPIRE_MINUTES=60" \
-            --set-env-vars "LOG_TO_FILE=true" \
-            --set-env-vars "REDIS_HOST=${{ env.REDIS_INSTANCE }}" \
-            --set-env-vars "REDIS_PORT=6379" \
-            --set-env-vars "REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}"
-        env:
-          GOOGLE_CLOUD_PROJECT: ${{ env.PROJECT_ID }}
+            --vpc-connector stock-connector \
+            --vpc-egress private-ranges-only \
+            --add-cloudsql-instances ${{ env.DB_INSTANCE_CONNECTION_NAME }} \
+            --set-env-vars "DATABASE_URL=${{ secrets.DATABASE_URL }},REDIS_URL=redis://${{ env.REDIS_PRIVATE_IP }}:6379/0,SECRET_KEY=${{ secrets.SECRET_KEY }},FINNHUB_API_KEY=${{ secrets.FINNHUB_API_KEY }},REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }},LOG_TO_FILE=true,ALGORITHM=HS256,ACCESS_TOKEN_EXPIRE_MINUTES=60"
 
+      # Deploy frontend
       - name: Deploy frontend to Cloud Run
         run: |
+          BACKEND_URL=$(gcloud run describe ${{ env.BACKEND_SERVICE }} --region ${{ env.REGION }} --format 'value(status.url)')
           gcloud run deploy ${{ env.FRONTEND_SERVICE }} \
-            --image gcr.io/${{ env.PROJECT_ID }}/${{ env.FRONTEND_SERVICE }}:latest \
+            --image ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/frontend/stock-frontend:${{ github.sha }} \
             --region ${{ env.REGION }} \
             --platform managed \
             --port 80 \
             --allow-unauthenticated \
-            --set-env-vars "VUE_APP_API_BASE_URL=https://${{ env.BACKEND_SERVICE }}-${{ env.PROJECT_ID }}.run.app"
-        env:
-          GOOGLE_CLOUD_PROJECT: ${{ env.PROJECT_ID }}
+            --set-env-vars "VUE_APP_API_BASE_URL=${BACKEND_URL}"
 
-      # 6. Update Cloud Run services to use latest images
-      - name: Update Cloud Run services
+      - name: Show deployment URLs
         run: |
-          gcloud run services update ${{ env.BACKEND_SERVICE }} \
-            --image gcr.io/${{ env.PROJECT_ID }}/${{ env.BACKEND_SERVICE }}:latest
-          
-          gcloud run services update ${{ env.FRONTEND_SERVICE }} \
-            --image gcr.io/${{ env.PROJECT_ID }}/${{ env.FRONTEND_SERVICE }}:latest
-        env:
-          GOOGLE_CLOUD_PROJECT: ${{ env.PROJECT_ID }}
-
-      # 7. Verify deployment
-      - name: Verify deployment
-        run: |
-          echo "Backend URL: https://${{ env.BACKEND_SERVICE }}-${{ env.PROJECT_ID }}.run.app"
-          echo "Frontend URL: https://${{ env.FRONTEND_SERVICE }}-${{ env.PROJECT_ID }}.run.app"
-          
-          # Check if endpoints are responding
-          curl -s -o /dev/null -w "%{http_code}" "https://${{ env.BACKEND_SERVICE }}-${{ env.PROJECT_ID }}.run.app/api/leaderboard"
-          curl -s -o /dev/null -w "%{http_code}" "https://${{ env.FRONTEND_SERVICE }}-${{ env.PROJECT_ID }}.run.app"
+          echo "✅ Backend: $(gcloud run describe ${{ env.BACKEND_SERVICE }} --region ${{ env.REGION }} --format 'value(status.url)')"
+          echo "✅ Frontend: $(gcloud run describe ${{ env.FRONTEND_SERVICE }} --region ${{ env.REGION }} --format 'value(status.url)')"

@@ -1,7 +1,7 @@
-from app.db.database import SessionLocal
+from app.db import database
 
 def get_db():
-    db = SessionLocal()
+    db = database.SyncSessionLocal()
     try:
         yield db
     finally:
