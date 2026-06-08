@@ -298,7 +298,7 @@
   }
 
   .text {
-    color: #ca8a04;
+    color: #EAB308;
   }
 
   /* opacity of the border around the input box */
