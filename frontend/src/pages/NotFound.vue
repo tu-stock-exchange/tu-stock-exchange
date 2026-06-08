@@ -1,37 +1,51 @@
 <!-- 404 page -->
 
 <template>
-  <v-container fluid class="error-background d-flex align-center justify-center">
+  <!-- background page-->
+  <v-container fluid class="bg-black min-h-screen d-flex align-center justify-center">
 
-    <v-card
-      width="500"
-      class="pa-10 text-center error-card"
-      rounded="xl"
-      elevation="0"
-    >
+    <!-- card -->
+    <v-card width="500" class="pa-10 text-center error-card" rounded="xl" elevation="0">
 
-
+      <!-- text -->
       <div class="error-code">404</div>
+      <h1 class="text-white font-bold" style="font-size: 1.5rem;"> Page not found </h1>
+      <p class="text-zinc-500 text-sm mt-1"> This page doesn’t exist or has been moved. </p>
 
-      <h1 class="text-h4 font-weight-bold mb-2">
-        Page not found
-      </h1>
+      <!-- space -->
+      <div class="mb-6" />
 
-      <p class="text-medium-emphasis mb-6">
-        The page you are looking for doesn’t exist or may have been moved.
-      </p>
+      <!-- dashboard button -->
+      <v-row justify="center">
+        <v-col cols="10">
+          <v-btn
+            block
+            to="/dashboard"
+            size="large"
+            rounded="lg"
+            variant="flat"
+            class="dash-btn font-bold mb-4"
+          >
+            <ArrowLeft :size="20" class="mr-2" />
+            Back to dashboard
+          </v-btn>
+        </v-col>
 
-
-      <v-btn
-        to="/"
-        color="indigo-darken-3"
-        size="large"
-        rounded="lg"
-        variant="flat"
-        class="text-none font-weight-bold"
-      >
-        Go back home
-      </v-btn>
+        <!-- market button -->
+        <v-col cols="10">
+          <v-btn
+            block
+            to="/"
+            size="large"
+            rounded="lg"
+            variant="flat"
+            class="btn font-bold"
+          >
+            Go to market
+          </v-btn>
+        </v-col>
+      </v-row>
+      
 
     </v-card>
 
@@ -39,26 +53,54 @@
   
 </template>
 
-<style scoped>
-.error-background {
-  min-height: 100vh;
-  background:
-    radial-gradient(circle at top left, #e0e7ff, transparent 30%),
-    radial-gradient(circle at bottom right, #c7d2fe, transparent 30%),
-    #f5f7fb;
-}
+<script setup lang="ts">
+ 
+  // imports
+  import { ArrowLeft } from 'lucide-vue-next'
+  import { useAuthStore } from '@/stores/auth'
+  const authStore = useAuthStore()
 
+</script>
+
+
+
+<style scoped>
 .error-card {
-  border: 1px solid #ececec;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+  background-color: #18181B !important;
+  border: 1px solid #27272A !important;
 }
 
 .error-code {
   font-size: 96px;
   font-weight: 800;
   line-height: 1;
-  color: #283593;
+  color: #EAB308 !important;
   margin-bottom: 16px;
 }
+
+.btn {
+  background-color: #18181B !important;
+  color: #71717A  !important;
+  font-weight: 700;
+  border: 1px solid #27272A !important;  /* border damit man ihn sieht */
+}
+
+.btn:hover {
+  background-color: #27272A !important;
+  color: #D4D4D8 !important;        /* heller beim hover */
+}
+
+.dash-btn {
+  background-color: #EAB308 !important;
+  color: #000000  !important;
+  font-weight: 700;
+  border: 1px solid #27272A !important;  /* border damit man ihn sieht */
+}
+
+.dash-btn:hover {
+  background-color: #27272A !important;
+  color: #D4D4D8 !important;        /* heller beim hover */
+}
+
 </style>
 
