@@ -20,4 +20,4 @@ def check_connection():
         return False
 
 if not check_connection():
-    raise ConnectionError("Failed to connect to Redis. Check your Redis configuration.")
+    print("Warning: Redis not available. Caching will be disabled.")

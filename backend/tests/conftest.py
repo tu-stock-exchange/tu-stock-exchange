@@ -4,7 +4,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from datetime import datetime, timedelta
 
-from backend.main import app
+from main import app
 from app.db.database import Base
 from app.db.dependencies import get_db
 

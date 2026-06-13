@@ -28,10 +28,13 @@ scheduler = BackgroundScheduler()
 
 @app.on_event("startup")
 def startup_event():
-    if not redis_client.ping():
-        logger.error("Failed to connect to Redis on startup")
-    else:
-        logger.info("Connected to Redis successfully")
+    try:
+        if not redis_client.ping():
+            logger.error("Failed to connect to Redis on startup")
+        else:
+            logger.info("Connected to Redis successfully")
+    except Exception as e:
+        logger.error(f"Redis not available: {e}")
 
 scheduler.add_job(
     create_daily_snapshot,
