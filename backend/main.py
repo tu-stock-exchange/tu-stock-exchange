@@ -58,8 +58,11 @@ logger.info("Scheduled daily net worth snapshot job (runs at 00:00 UTC)")
 
 @app.on_event("shutdown")
 def shutdown_event():
-    scheduler.shutdown()
-    logger.info("Scheduler stopped")
+    try:
+        scheduler.shutdown()
+        logger.info("Scheduler stopped")
+    except Exception:
+        pass
 
 app.include_router(auth.router, prefix="/api")
 app.include_router(users.router, prefix="/api")
