@@ -13,6 +13,10 @@ RUN npm ci
 # Copy source code
 COPY . .
 
+# Accept the build argument and expose it to Vite
+ARG VITE_API_BASE_URL
+ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
+
 # Build the Vue app
 RUN npm run build
 
