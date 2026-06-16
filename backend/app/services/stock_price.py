@@ -1,17 +1,17 @@
 import requests
-from app.services.redis_client import redis_client
+from app.services.redis_client import get_redis
 from app.core.config import settings
 
 CACHE_TTL = 3600  # 1 hour
 FINNHUB_URL = "https://finnhub.io/api/v1/quote"
 
-
-def get_current_price(ticker: str) -> float | None:
+async def get_current_price(ticker: str) -> float | None:
     ticker = ticker.upper()
     cache_key = f"price:{ticker}"
 
+    redis = await get_redis()
     try:
-        cached = redis_client.get(cache_key)
+        cached = await redis.get(cache_key)
         if cached:
             return float(cached)
     except Exception:
@@ -24,12 +24,12 @@ def get_current_price(ticker: str) -> float | None:
             timeout=5,
         )
         data = response.json()
-        price = data.get("c")  # "c" = current price
+        price = data.get("c")
         if not price or float(price) <= 0:
             return None
         price = float(price)
         try:
-            redis_client.setex(cache_key, CACHE_TTL, str(price))
+            await redis.setex(cache_key, CACHE_TTL, str(price))
         except Exception:
             pass
         return price

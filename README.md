@@ -23,6 +23,7 @@ project-root/
 ├── .github/
     ├── workflows               # GCP config
 ├── backend/                    # FastAPI backend
+│   └── alembic/
 │   ├── Dockerfile
 │   ├── requirements.txt
 │   └── app/
