@@ -28,7 +28,7 @@ yarn-error.log*
 
 # VS Code
 .vscode/
-
+.idea/
 # Mac system files
 .DS_Store
 
