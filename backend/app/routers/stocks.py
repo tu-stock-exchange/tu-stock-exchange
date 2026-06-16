@@ -21,21 +21,6 @@ TICKER_NAMES = {
 }
 
 
-AI_TICKERS = [
-    "NVDA", "MSFT", "GOOGL", "AMZN", "MRVL"
-]
-
-GREEN_ENERGY_TICKERS = [
-    "NEE", "FSLR", "ENPH", "RUN", "PLUG"
-]
-
-TECH_GIANTS_TICKERS = [
-    "AAPL", "MSFT", "NVDA", "AVGO", "TSM"
-]
-
-WARREN_BUFFET_PORTFOLIO_TICKERS = [
-    "AAPL" , "AXP", "KO", "BAC", "CVX"
-]
 @router.get("/stocks/popular")
 def get_popular_stocks():
     stocks = []
@@ -43,7 +28,9 @@ def get_popular_stocks():
         price = get_current_price(ticker)
         if price is not None:
             stocks.append({
-
+                "ticker": ticker,
+                "name": TICKER_NAMES.get(ticker, ticker),
+                "price": price,
             })
     return {"stocks": stocks}
 
