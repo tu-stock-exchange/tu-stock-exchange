@@ -73,9 +73,9 @@ services:
       dockerfile: Dockerfile
     container_name: stock_exchange_frontend
     ports:
-      - "8080:80"
-    environment:
-      VUE_APP_API_BASE_URL: http://localhost:8000
+      - "8080:8080"
+#    environment:
+#      VUE_APP_API_BASE_URL: http://localhost:8000
     networks:
       - stock_net
     restart: unless-stopped
