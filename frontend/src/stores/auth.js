@@ -19,6 +19,11 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.setItem('user', JSON.stringify(user.value))
   }
 
+  // logic needed for default page; if the user's net worth falls under 100 then he will be redirected to the default page
+  const isBankrupt = computed(() => {
+    return isLoggedIn.value && netWorth.value < 100
+  })
+
   function logout() {
     token.value = null
     user.value = null
