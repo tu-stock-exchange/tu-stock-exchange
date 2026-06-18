@@ -9,8 +9,7 @@ env:
   REGION: europe-north1
   BACKEND_SERVICE: stock-exchange-backend
   FRONTEND_SERVICE: stock-exchange-frontend
-  # These are your Cloud SQL instance connection name and Redis private IP
-  DB_INSTANCE_CONNECTION_NAME: ${{ secrets.DB_INSTANCE_CONNECTION_NAME }}   # format: project:region:instance
+  DB_INSTANCE_CONNECTION_NAME: ${{ secrets.DB_INSTANCE_CONNECTION_NAME }}
   REDIS_PRIVATE_IP: ${{ secrets.REDIS_PRIVATE_IP }}
 
 jobs:
@@ -24,10 +23,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Authenticate to GCP
+      - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v1
         with:
-          credentials_json: ${{ secrets.GCP_SA_KEY }}
+          workload_identity_provider: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.SERVICE_ACCOUNT_EMAIL }}
 
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v1
@@ -35,19 +35,13 @@ jobs:
       - name: Configure Docker for Artifact Registry
         run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
 
-      # Build and push backend
+      # ---------- 1. Build and push backend ----------
       - name: Build backend image
         run: |
           docker build -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/backend/stock-backend:${{ github.sha }} ./backend
           docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/backend/stock-backend:${{ github.sha }}
 
-      # Build and push frontend
-      - name: Build frontend image
-        run: |
-          docker build -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/frontend/stock-frontend:${{ github.sha }} ./frontend
-          docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/frontend/stock-frontend:${{ github.sha }}
-
-      # Deploy backend
+      # ---------- 2. Deploy backend first ----------
       - name: Deploy backend to Cloud Run
         run: |
           gcloud run deploy ${{ env.BACKEND_SERVICE }} \
@@ -61,19 +55,34 @@ jobs:
             --add-cloudsql-instances ${{ env.DB_INSTANCE_CONNECTION_NAME }} \
             --set-env-vars "DATABASE_URL=${{ secrets.DATABASE_URL }},REDIS_URL=redis://${{ env.REDIS_PRIVATE_IP }}:6379/0,SECRET_KEY=${{ secrets.SECRET_KEY }},FINNHUB_API_KEY=${{ secrets.FINNHUB_API_KEY }},REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }},LOG_TO_FILE=true,ALGORITHM=HS256,ACCESS_TOKEN_EXPIRE_MINUTES=60"
 
-      # Deploy frontend
-      - name: Deploy frontend to Cloud Run
+      # ---------- 3. Get the backend URL ----------
+      - name: Get backend URL
+        id: get-backend-url
         run: |
           BACKEND_URL=$(gcloud run describe ${{ env.BACKEND_SERVICE }} --region ${{ env.REGION }} --format 'value(status.url)')
+          echo "url=$BACKEND_URL" >> $GITHUB_OUTPUT
+
+      # ---------- 4. Build frontend with the backend URL ----------
+      - name: Build frontend image with backend URL
+        run: |
+          docker build \
+            --build-arg VUE_APP_API_BASE_URL=${{ steps.get-backend-url.outputs.url }} \
+            -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/frontend/stock-frontend:${{ github.sha }} \
+            ./frontend
+          docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/frontend/stock-frontend:${{ github.sha }}
+
+      # ---------- 5. Deploy frontend ----------
+      - name: Deploy frontend to Cloud Run
+        run: |
           gcloud run deploy ${{ env.FRONTEND_SERVICE }} \
             --image ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/frontend/stock-frontend:${{ github.sha }} \
             --region ${{ env.REGION }} \
             --platform managed \
             --port 80 \
-            --allow-unauthenticated \
-            --set-env-vars "VUE_APP_API_BASE_URL=${BACKEND_URL}"
+            --allow-unauthenticated
 
+      # ---------- 6. Show URLs ----------
       - name: Show deployment URLs
         run: |
-          echo "✅ Backend: $(gcloud run describe ${{ env.BACKEND_SERVICE }} --region ${{ env.REGION }} --format 'value(status.url)')"
+          echo "✅ Backend: ${{ steps.get-backend-url.outputs.url }}"
           echo "✅ Frontend: $(gcloud run describe ${{ env.FRONTEND_SERVICE }} --region ${{ env.REGION }} --format 'value(status.url)')"

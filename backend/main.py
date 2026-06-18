@@ -12,6 +12,7 @@ from app.routers.auto_trades import router as auto_trades_router
 from app.routers.stocks import router as stocks_router
 from app.routers.leaderboard_history import router as leaderboard_history_router
 from app.services.redis_client import init_redis, close_redis, get_redis
+import os
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -57,13 +58,7 @@ app = FastAPI(lifespan=lifespan, title="TU Stock Exchange API")
 # CORS middleware (allow frontend origins)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:8080",
-        "http://0.0.0.0:8080",
-        "http://127.0.0.1:8080",
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-    ],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
