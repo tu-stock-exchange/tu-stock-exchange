@@ -27,7 +27,7 @@
         datasets: [{
             label: 'Portfolio Value',
             data: props.players.map(p => p.portfolio_value),
-            backgroundColor: ['#7C3AED', '#9F67F5', '#B48AF7', '#C9A8F9', '#E4D3FC']
+            backgroundColor: ['#F5C518', '#D4A017', '#6B7280', '#4B5563', '#374151']
         }]
     }))
 
