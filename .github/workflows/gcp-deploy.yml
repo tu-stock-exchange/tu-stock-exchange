@@ -59,7 +59,7 @@ jobs:
       - name: Get backend URL
         id: get-backend-url
         run: |
-          BACKEND_URL=$(gcloud run describe ${{ env.BACKEND_SERVICE }} --region ${{ env.REGION }} --format 'value(status.url)')
+          BACKEND_URL=$(gcloud run services describe ${{ env.BACKEND_SERVICE }} --region ${{ env.REGION }} --format 'value(status.url)')
           echo "url=$BACKEND_URL" >> $GITHUB_OUTPUT
 
       # ---------- 4. Build frontend with the backend URL ----------
@@ -85,4 +85,4 @@ jobs:
       - name: Show deployment URLs
         run: |
           echo "✅ Backend: ${{ steps.get-backend-url.outputs.url }}"
-          echo "✅ Frontend: $(gcloud run describe ${{ env.FRONTEND_SERVICE }} --region ${{ env.REGION }} --format 'value(status.url)')"
+          echo "✅ Frontend: $(gcloud run services describe ${{ env.FRONTEND_SERVICE }} --region ${{ env.REGION }} --format 'value(status.url)')"
