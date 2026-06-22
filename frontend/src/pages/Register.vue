@@ -5,9 +5,6 @@
     <!-- whole card -->
     <v-card width="420" rounded="xl" elevation="0" class="login-card">
 
-      <!-- title -->
-      <v-card-title class="text-white font-bold" style="font-size: 1.5rem;"> Create your account </v-card-title>
-
       <!-- title and subtitle -->
       <div class="px-6 pt-6 pb-2">
         <h2 class="text-white font-bold" style="font-size: 1.5rem;">  Create your account  </h2>

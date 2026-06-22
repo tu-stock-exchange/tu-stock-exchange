@@ -1,19 +1,20 @@
+
 <template>
-  <div class="p-8 w-full max-w-4xl mx-auto">
+  <div class="p-8 w-full max-w-6xl mx-auto">
     <h1 class="text-4xl font-bold mb-2 text-white">Leaderboard</h1>
     <p class="text-sm mb-10 text-yellow-600 uppercase tracking-widest font-medium">Top traders</p>
 
     <div v-if="loading" class="text-gray-400">Loading...</div>
     <div v-else-if="error" class="text-red-400">{{ error }}</div>
 
-    <div v-else>
+    <div v-else class="flex gap-6 items-start">
       <!-- bar chart -->
-      <div class="rounded-xl bg-zinc-900 border border-zinc-800 p-6 mb-8" style="max-width: 600px">
+      <div class="rounded-xl bg-zinc-900 border border-zinc-800 p-6 w-2/5">
         <LeaderboardChart :players="chartData" />
       </div>
 
       <!-- table -->
-      <div class="rounded-xl bg-zinc-900 border border-zinc-800 overflow-hidden">
+      <div class="rounded-xl bg-zinc-900 border border-zinc-800 overflow-hidden w-3/5">
         <div class="px-6 py-5 border-b border-zinc-800">
           <h2 class="text-base font-semibold text-white uppercase tracking-widest">Rankings</h2>
         </div>

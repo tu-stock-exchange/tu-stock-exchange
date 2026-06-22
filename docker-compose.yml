@@ -47,7 +47,8 @@ services:
     ports:
       - "8000:8000"
     environment:
-      DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
+      DATABASE_URL: postgresql+asyncpg://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
+      REDIS_URL: redis://redis:6379/0
       REDIS_HOST: redis
       REDIS_PORT: 6379
       SECRET_KEY: ${SECRET_KEY}
@@ -72,9 +73,9 @@ services:
       dockerfile: Dockerfile
     container_name: stock_exchange_frontend
     ports:
-      - "8080:80"
-    environment:
-      VUE_APP_API_BASE_URL: http://localhost:8000
+      - "8080:8080"
+#    environment:
+#      VUE_APP_API_BASE_URL: http://localhost:8000
     networks:
       - stock_net
     restart: unless-stopped

@@ -1,4 +1,4 @@
-from app.db.database import SessionLocal
+from app.db import database
 from app.models.auto_trade import AutoTrade
 from app.models.users import User
 from app.models.holding import Holding
@@ -6,7 +6,7 @@ from app.models.trade import Trade
 from app.services.stock_price import get_current_price
 
 def check_auto_trades():
-    db = SessionLocal()
+    db = database.SyncSessionLocal()
 
     try: 
         active_trades = db.query(AutoTrade).filter(AutoTrade.is_active == True).all()

@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 const api = axios.create({
-  baseURL: 'http://localhost:8000/api', // TODO: change to Anastasia's backend URL
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api', // Backend routes are mounted under /api
 })
 
 // INTERCEPTOR - adds token to every request before sending
