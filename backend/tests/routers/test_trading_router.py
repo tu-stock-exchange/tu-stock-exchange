@@ -110,4 +110,68 @@ def test_sell_stock_not_enough(client):
     assert response.status_code == 400
     assert "Not enough stocks" in response.json()["detail"]
 
+def test_get_portfolio_empty(client):
 
+    fake_user = make_fake_user()
+    app.dependency_overrides[get_current_user] = lambda : fake_user
+
+    response = client.get("/api/portfolio")
+
+    app.dependency_overrides.pop(get_current_user, None)
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["holdings"] == []
+    assert data["total_current_value"] == 0.0
+    assert data["cash_balance"] == 10000.0 
+
+def test_get_portfolio_with_holdings(client, db): 
+
+    fake_user = make_fake_user()
+    app.dependency_overrides[get_current_user] = lambda : fake_user
+
+    from app.models.holding import Holding
+
+    holding1 = Holding(
+        user_id = 1, 
+        ticker = "AAPL", 
+        quantity = 10, 
+        average_buy_price = 140.0
+    )
+
+    db.add(holding1)
+    db.commit()
+
+    with patch("app.routers.trading.get_current_price", return_value = 150.0):
+        response = client.get("api/portfolio")
+
+    app.dependency_overrides.pop(get_current_user, None)
+
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data["holdings"]) == 1
+    assert data["holdings"][0]["ticker"] == "AAPL"
+    assert data["holdings"][0]["quantity"] == 10
+    assert data["holdings"][0]["pnl"] == 100.0
+
+def test_get_trade_history(client, db): 
+
+    fake_user = make_fake_user()
+    app.dependency_overrides[get_current_user] = lambda : fake_user
+
+    from app.models.trade import Trade
+
+    trade1 = Trade(user_id=1, ticker="AAPL", trade_type="buy", quantity=5, price=150.0, total_value=750.0)
+    trade2 = Trade(user_id=1, ticker="TSLA", trade_type="sell", quantity=2, price=200.0, total_value=400.0)
+    db.add(trade1)
+    db.add(trade2)
+    db.commit()
+
+    response = client.get("/api/trades/history")
+
+    app.dependency_overrides.pop(get_current_user, None)
+
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data["trades"]) == 2
+    assert data["page"] == 1
