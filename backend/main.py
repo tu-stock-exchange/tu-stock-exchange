@@ -17,7 +17,6 @@ import os
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # --- Startup ---
-    # Initialize Redis
     await init_redis()
     try:
         redis_client = await get_redis()
@@ -26,7 +25,6 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"Failed to connect to Redis on startup: {e}")
 
-    # Start the background scheduler
     scheduler = BackgroundScheduler()
     scheduler.add_job(
         create_daily_snapshot,
@@ -46,16 +44,18 @@ async def lifespan(app: FastAPI):
     scheduler.start()
     logger.info("Scheduled jobs started (daily snapshot at 00:00 UTC, auto-trades every hour)")
 
-    yield  # The application runs here
+    yield
 
     # --- Shutdown ---
-    scheduler.shutdown()
-    logger.info("Scheduler stopped")
+    try:
+        scheduler.shutdown()
+        logger.info("Scheduler stopped")
+    except Exception:
+        pass
     await close_redis()
 
 app = FastAPI(lifespan=lifespan, title="TU Stock Exchange API")
 
-# CORS middleware (allow frontend origins)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],

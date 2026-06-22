@@ -17,15 +17,15 @@ class TradeRequest(BaseModel):
     quantity: int
 
 @router.post("/trades/buy")
-def buy_stock(trade: TradeRequest, current_user : User = Depends(get_current_user),db : Session = Depends(get_db)):
+async def buy_stock(trade: TradeRequest, current_user : User = Depends(get_current_user),db : Session = Depends(get_db)):
 
     #find the user in database
     user = current_user
-    
+
     if user.is_bankrupt:
         raise HTTPException(status_code = 403, detail = "Account is bankrupt")
-    
-    price = get_current_price(trade.ticker)
+
+    price = await get_current_price(trade.ticker)
     if price is None:
         raise HTTPException(status_code=503, detail=f"Could not fetch price for {trade.ticker}")
     total_cost = price * trade.quantity
@@ -82,25 +82,25 @@ def buy_stock(trade: TradeRequest, current_user : User = Depends(get_current_use
     }   
 
 @router.post("/trades/sell")
-def sell_stock(trade: TradeRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+async def sell_stock(trade: TradeRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
 
     user = current_user
 
     if user.is_bankrupt:
         raise HTTPException(status_code=403, detail="Account is bankrupt")
-    
+
     holding = db.query(Holding).filter(
-        Holding.user_id == user.id, 
+        Holding.user_id == user.id,
         Holding.ticker == trade.ticker
     ).first()
 
     if not holding or holding.quantity < trade.quantity:
         raise HTTPException(
-            status_code = 400, 
+            status_code = 400,
             detail = f"Not enough stocks. You have {holding.quantity if holding else 0}"
         )
 
-    price = get_current_price(trade.ticker)
+    price = await get_current_price(trade.ticker)
     if price is None:
         raise HTTPException(status_code=503, detail=f"Could not fetch price for {trade.ticker}")
     total_value = price * trade.quantity
@@ -134,7 +134,7 @@ def sell_stock(trade: TradeRequest, current_user: User = Depends(get_current_use
     }
 
 @router.get("/portfolio")
-def get_portfolio(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+async def get_portfolio(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     user = current_user
     holdings = db.query(Holding).filter(Holding.user_id == user.id).all()
 
@@ -143,7 +143,7 @@ def get_portfolio(current_user: User = Depends(get_current_user), db: Session = 
     total_cost_basis = 0.0
 
     for holding in holdings:
-        current_price = get_current_price(holding.ticker)
+        current_price = await get_current_price(holding.ticker)
         current_value = holding.quantity * current_price
         cost_basis = holding.quantity * holding.average_buy_price
         pnl = current_value - cost_basis
@@ -171,7 +171,7 @@ def get_portfolio(current_user: User = Depends(get_current_user), db: Session = 
     }
 
 @router.get("/trades/history")
-def get_history(current_user: User = Depends(get_current_user), page: int = 1, limit: int = 10, db: Session = Depends(get_db)):
+async def get_history(current_user: User = Depends(get_current_user), page: int = 1, limit: int = 10, db: Session = Depends(get_db)):
     offset = (page-1)*limit
     trades = db.query(Trade).filter(Trade.user_id == current_user.id).offset(offset).limit(limit).all()
     return {"trades" : trades, 
@@ -180,13 +180,13 @@ def get_history(current_user: User = Depends(get_current_user), page: int = 1, l
 
 
 @router.get('/portfolio/networth')
-def get_networth(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+async def get_networth(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     user = current_user
     holdings = db.query(Holding).filter(Holding.user_id == user.id).all()
 
     total_stock_value = 0.0
     for holding in holdings:
-        current_price = get_current_price(holding.ticker)
+        current_price = await get_current_price(holding.ticker)
         total_stock_value += holding.quantity * current_price
 
     networth = user.balance + total_stock_value

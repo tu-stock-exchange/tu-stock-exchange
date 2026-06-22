@@ -13,8 +13,10 @@ async def init_redis():
             socket_connect_timeout=5,
             socket_timeout=5
         )
-        # Test connection
-        await _redis_client.ping()
+        try:
+            await _redis_client.ping()
+        except Exception:
+            print("Warning: Redis not available. Caching will be disabled.")
 
 async def get_redis():
     """Return the Redis client, initialising it if necessary."""
