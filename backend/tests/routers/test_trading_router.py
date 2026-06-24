@@ -143,7 +143,7 @@ def test_get_portfolio_with_holdings(client, db):
     db.commit()
 
     with patch("app.routers.trading.get_current_price", return_value = 150.0):
-        response = client.get("api/portfolio")
+        response = client.get("/api/portfolio")
 
     app.dependency_overrides.pop(get_current_user, None)
 
@@ -175,3 +175,113 @@ def test_get_trade_history(client, db):
     data = response.json()
     assert len(data["trades"]) == 2
     assert data["page"] == 1
+
+def test_get_networth(client, db):
+
+    fake_user = make_fake_user()
+    app.dependency_overrides[get_current_user] = lambda : fake_user
+
+    from app.models.holding import Holding
+
+    holding1 = Holding(
+    user_id = 1,
+    ticker = "AAPL",
+    quantity = 10,
+    average_buy_price = 140.0
+    )
+
+    db.add(holding1)
+    db.commit()
+
+    with patch("app.routers.trading.get_current_price", return_value = 150.0):
+
+        response = client.get("/api/portfolio/networth")
+
+    app.dependency_overrides.pop(get_current_user, None)
+
+    assert response.status_code == 200
+    data = response.json()
+
+    assert data["total_stock_value"] == 1500.0
+    assert data["cash_balance"] == 10000.0
+    assert data["networth"] == 11500.0
+
+def test_create_auto_trade(client):
+
+    fake_user = make_fake_user()
+
+    app.dependency_overrides[get_current_user] = lambda : fake_user
+
+    response = client.post(
+        "/api/auto-trades", 
+        json = {
+        "ticker" : "AAPL", 
+        "trade_type" :'buy', 
+        "target_price" : 140.0, 
+        "quantity" : 5
+        }
+    )    
+
+    app.dependency_overrides.pop(get_current_user, None)
+
+    assert response.status_code == 200
+
+    data = response.json()
+    assert data["message"] == "Auto trade created"
+    assert "id" in data
+
+def test_get_auto_trades(client, db):
+
+    fake_user = make_fake_user()
+
+    app.dependency_overrides[get_current_user] = lambda : fake_user
+
+    from app.models.auto_trade import AutoTrade
+
+        
+    auto_trade = AutoTrade(
+        user_id = 1, 
+        ticker = "AAPL", 
+        trade_type = "buy", 
+        target_price = 140.0, 
+        quantity = 5, 
+        is_active = True
+        )
+
+    db.add(auto_trade)
+    db.commit()
+
+    response = client.get("/api/auto-trades")
+    app.dependency_overrides.pop(get_current_user, None)
+
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data["auto_trades"]) == 1
+        
+    assert data["auto_trades"][0]["ticker"] == "AAPL"
+    assert data["auto_trades"][0]["trade_type"] == "buy"
+
+def test_delete_auto_trade(client, db):
+    fake_user = make_fake_user()
+    app.dependency_overrides[get_current_user] = lambda: fake_user
+
+    from app.models.auto_trade import AutoTrade
+    auto_trade = AutoTrade(
+        user_id=1,
+        ticker="AAPL",
+        trade_type="buy",
+        target_price=140.0,
+        quantity=5,
+        is_active=True
+    )
+    db.add(auto_trade)
+    db.commit()
+    db.refresh(auto_trade)
+
+    response = client.delete(f"/api/auto-trades/{auto_trade.id}")
+    app.dependency_overrides.pop(get_current_user, None)
+
+    assert response.status_code == 200
+    assert response.json()["message"] == "Auto trade deactivated"
+
+
