@@ -8,6 +8,7 @@ class UserPublicResponse(BaseModel):
     email: EmailStr
     balance: float
     is_bankrupt: bool
+    bankrupt_at: Optional[datetime]
     registered_at: datetime
 
     class Config:

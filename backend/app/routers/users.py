@@ -5,6 +5,7 @@ from app.core.auth_dependencies import get_current_user
 from app.db.dependencies import get_db
 from app.models.users import User
 from app.schemas.users_schemas import UserPublicResponse, UserUpdateRequest
+from app.services.default_services import recover_from_bankruptcy
 
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -29,6 +30,19 @@ def get_user_by_id(
         )
 
     return user
+
+@router.post("/me/recover", response_model=UserPublicResponse)
+def recover_bankruptcy(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if not current_user.is_bankrupt:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Account is not bankrupt",
+        )
+    return recover_from_bankruptcy(current_user, db)
+
 
 @router.put("/me", response_model=UserPublicResponse)
 def update_me(
