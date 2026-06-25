@@ -7,6 +7,7 @@ from app.db.dependencies import get_db
 from app.models.holding import Holding
 from app.core.auth_dependencies import get_current_user
 from app.services.stock_price import get_current_price
+from app.services.default_services import check_and_handle_bankruptcy
 
 
 router = APIRouter()
@@ -72,6 +73,13 @@ async def buy_stock(trade: TradeRequest, current_user : User = Depends(get_curre
 
     db.commit()
 
+    holdings = db.query(Holding).filter(Holding.user_id == user.id).all()
+    total_stock_value = sum(
+        h.quantity * (await get_current_price(h.ticker) or h.average_buy_price)
+        for h in holdings
+    )
+    await check_and_handle_bankruptcy(user, user.balance + total_stock_value, db)
+
     return {
         "message": "Buy order successful",
         "ticker": trade.ticker,
@@ -123,6 +131,13 @@ async def sell_stock(trade: TradeRequest, current_user: User = Depends(get_curre
         db.delete(holding)
 
     db.commit()
+
+    holdings = db.query(Holding).filter(Holding.user_id == user.id).all()
+    total_stock_value = sum(
+        h.quantity * (await get_current_price(h.ticker) or h.average_buy_price)
+        for h in holdings
+    )
+    await check_and_handle_bankruptcy(user, user.balance + total_stock_value, db)
 
     return {
         "message": "Sell order successful",

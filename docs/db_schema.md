@@ -1,73 +1,142 @@
-## Database Schema
+# Database Schema
 
-## Users
-Stores registered users.
+Base: PostgreSQL 15. ORM: SQLAlchemy 2.0. Migrations: Alembic.
 
-Fields:
-- id
-- username
-- email
-- password_hash
-- balance
-- is_bankrupt // if the User is bankrupt 
-- registered_at
+---
 
-## Trades
-Stores buy and sell transactions.
+## Tables
 
-Fields:
-- id // number of a transaction
-- user_id
-- ticker //  stock symbol, AAPL, TSLA, etc.
-- trade_type //buy or sell
-- quantity
-- price
-- total_value //price * quantity
-- timestamp //when the transaction took place
+### `users`
 
-## holdings
+Stores registered users and their account state.
 
-Stores the current portfolio of each user.
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| `id` | `Integer` | No | auto | Primary key |
+| `email` | `String` | No | — | Unique, lowercased on write |
+| `username` | `String` | Yes | — | Unique display name |
+| `password_hash` | `String` | No | — | bcrypt hash, never stored in plain text |
+| `balance` | `Float` | No | `10000.0` | Cash balance in USD |
+| `is_bankrupt` | `Boolean` | No | `false` | `true` when account is locked due to bankruptcy |
+| `bankrupt_at` | `DateTime` | Yes | `null` | UTC timestamp of the most recent bankruptcy event |
+| `registered_at` | `DateTime` | No | `utcnow` | Account creation time |
 
-Fields:
-- id // unique holding ID
-- user_id // reference to users.id
-- ticker // stock symbol, e.g. AAPL, TSLA
-- quantity // number of shares currently owned
-- average_buy_price // average purchase price for this ticker
-- updated_at // when this holding was last updated
+**Relationships:** one user → many `holdings`, `trades`, `auto_trades`, `net_worth_history`
 
-## stock_price_history
+---
 
-Stores historical stock prices.
+### `holdings`
 
-Fields:
-- id // unique price history ID
-- ticker // stock symbol, e.g. AAPL, TSLA
-- price // stock price at the recorded time
-- timestamp // when the price was recorded
+Current portfolio snapshot, one row per user per ticker. Updated after every buy/sell. Deleted when quantity reaches zero or on bankruptcy liquidation.
 
-## net_worth_history
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| `id` | `Integer` | No | auto | Primary key |
+| `user_id` | `Integer` | No | — | FK → `users.id` |
+| `ticker` | `String` | No | — | Stock symbol (e.g. `AAPL`) |
+| `quantity` | `Integer` | No | — | Number of shares currently owned |
+| `average_buy_price` | `Float` | No | — | Weighted average purchase price across all buys |
+| `updated_at` | `DateTime` | No | `utcnow` | Last modification time |
 
-Stores the user's net worth over time.
+**Indexes:** `user_id`
 
-Fields:
-- id // unique net worth history ID
-- user_id // reference to users.id
-- net_worth // total user value: cash balance + current value of holdings
-- timestamp // when the net worth was recorded
+---
+
+### `trades`
+
+Immutable log of every buy and sell transaction, including bankruptcy liquidation sells.
+
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| `id` | `Integer` | No | auto | Primary key |
+| `user_id` | `Integer` | No | — | FK → `users.id` |
+| `ticker` | `String` | No | — | Stock symbol |
+| `trade_type` | `String` | No | — | `"buy"` or `"sell"` |
+| `quantity` | `Integer` | No | — | Number of shares traded |
+| `price` | `Float` | No | — | Price per share at execution time |
+| `total_value` | `Float` | No | — | `price × quantity` |
+| `timestamp` | `DateTime` | No | `utcnow` | When the trade was executed |
+
+**Indexes:** `user_id`
+
+---
+
+### `auto_trades`
+
+Pending conditional trading rules. Executed by the background scheduler when `target_price` is reached.
+
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| `id` | `Integer` | No | auto | Primary key |
+| `user_id` | `Integer` | No | — | FK → `users.id` |
+| `ticker` | `String` | No | — | Stock symbol |
+| `trade_type` | `String` | No | — | `"buy"` or `"sell"` |
+| `target_price` | `Float` | No | — | Price that triggers execution |
+| `quantity` | `Integer` | No | — | Number of shares to trade |
+| `is_active` | `Boolean` | No | `true` | `false` after execution, cancellation, or bankruptcy |
+| `created_at` | `DateTime` | No | `utcnow` | Rule creation time |
+
+**Execution logic:**
+- `buy` → executes when `current_price <= target_price`
+- `sell` → executes when `current_price >= target_price`
+
+---
+
+### `stock_price_history`
+
+Time-series of fetched stock prices. Written by the price polling service. Used to serve current prices from cache/DB when the external API is unavailable.
+
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| `id` | `Integer` | No | auto | Primary key |
+| `ticker` | `String` | No | — | Stock symbol |
+| `price` | `Float` | No | — | Price in USD at the recorded time |
+| `timestamp` | `DateTime` | No | `utcnow` | When the price was recorded |
+
+**Indexes:** `ticker`
+
+---
+
+### `net_worth_history`
+
+Daily snapshots of each user's total net worth (cash + holdings market value). Written by the daily snapshot task. Used for the leaderboard history chart.
+
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| `id` | `Integer` | No | auto | Primary key |
+| `user_id` | `Integer` | No | — | FK → `users.id` |
+| `net_worth` | `Float` | No | — | Cash balance + market value of all holdings at snapshot time |
+| `timestamp` | `DateTime` | No | `utcnow` | When the snapshot was taken |
+
+**Indexes:** `user_id`
+
+Bankrupt users are skipped during snapshotting.
+
+---
+
+## Entity Relationships
 
 
-## auto_trades
+users
+ ├── holdings        (user_id → users.id)
+ ├── trades          (user_id → users.id)
+ ├── auto_trades     (user_id → users.id)
+ └── net_worth_history (user_id → users.id)
 
-Stores automatic buy/sell trading rules.
+stock_price_history 
 
-Fields:
-- id // unique auto-trade ID
-- user_id // reference to users.id
-- ticker // stock symbol, e.g. AAPL, TSLA
-- trade_type // buy or sell
-- target_price // price condition for executing the trade
-- quantity // number of shares to buy or sell
-- is_active // true if the auto-trade rule is still active
-- created_at // when the auto-trade rule was created
+---
+
+## Migrations
+
+Migrations live in `backend/alembic/versions/`. Run with:
+
+```bash
+alembic upgrade head
+```
+
+| Revision | Description |
+|----------|-------------|
+| `5468d9510b3b` | Initial schema |
+| `c9b9ec50f5b4` | Add `username` to `users` |
+| `a1b2c3d4e5f6` | Add `bankrupt_at` to `users` |

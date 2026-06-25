@@ -1,9 +1,3 @@
-#takes JWT token fron the Authorization header, 
-# decodes it, and retrieves the corresponding user from the database. 
-# If the token is invalid or expired, or if the user does not exist, 
-# it raises an HTTP 401 Unauthorized error. This function can be used as a dependency in FastAPI routes 
-# to protect them and ensure that only authenticated users can access them.
-
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
@@ -20,6 +14,24 @@ def get_current_user(
     token: str = Depends(oauth2_scheme),
     db: Session = Depends(get_db),
 ) -> User:
+    """Resolve and return the authenticated user from a JWT bearer token.
+
+    Intended for use as a FastAPI dependency on any protected route.
+    Extracts the token from the ``Authorization: Bearer <token>`` header,
+    decodes it, and loads the corresponding user from the database.
+
+    Args:
+        token: JWT bearer token injected automatically by FastAPI from the
+               ``Authorization`` header via ``OAuth2PasswordBearer``.
+        db: Database session injected by FastAPI via ``get_db``.
+
+    Returns:
+        The ``User`` model instance for the authenticated user.
+
+    Raises:
+        HTTPException(401): If the token is missing, invalid, expired, or
+            the user id embedded in the token no longer exists in the database.
+    """
     payload = decode_access_token(token)
 
     if payload is None:

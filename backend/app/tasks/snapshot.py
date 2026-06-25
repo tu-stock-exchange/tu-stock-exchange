@@ -9,8 +9,9 @@ from app.services.stock_price import get_current_price
 from app.services.redis_client import get_redis
 from app.core.config import settings
 from app.utils.logger import logger
+from app.services.default_services import check_and_handle_bankruptcy
 
-# ------------------ Async core logic ------------------
+
 async def _create_daily_snapshot_async():
     db = database.SyncSessionLocal()
     try:
@@ -35,6 +36,11 @@ async def _create_daily_snapshot_async():
                 continue
 
             net_worth = await _calculate_net_worth_async(db, user.id)
+
+            went_bankrupt = await check_and_handle_bankruptcy(user, net_worth, db)
+            if went_bankrupt:
+                logger.info(f"User {user.id} declared bankrupt during snapshot (net worth ${net_worth:.2f})")
+                continue
 
             snapshot = models.NetWorthHistory(
                 user_id=user.id,
@@ -69,7 +75,7 @@ async def _calculate_net_worth_async(db: Session, user_id: int) -> float:
 
     return round(user.balance + holdings_value, 2)
 
-# ------------------ Synchronous wrapper for the scheduler ------------------
+
 def create_daily_snapshot():
     """Synchronous entry point for APScheduler (BackgroundScheduler)."""
     asyncio.run(_create_daily_snapshot_async())
