@@ -24,7 +24,7 @@ def get_portfolio_history(
     user_id: int,
     db: Session = Depends(get_db)
 ):
-
+    """Return the historical net worth, cash balance, holdings value, and positions for a given user."""
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")

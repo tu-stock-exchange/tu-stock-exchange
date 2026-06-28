@@ -6,6 +6,7 @@ CACHE_TTL = 3600  # 1 hour
 FINNHUB_URL = "https://finnhub.io/api/v1/quote"
 
 async def get_current_price(ticker: str) -> float | None:
+    """Fetch the current price for a ticker from Redis cache, falling back to the Finnhub API."""
     ticker = ticker.upper()
     cache_key = f"price:{ticker}"
 

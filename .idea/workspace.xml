@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="796a6668-9a39-4021-94da-6a42e5fcd907" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/backend/app/routers/portfolio.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/routers/portfolio.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/routers/stocks.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/routers/stocks.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/routers/trading.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/routers/trading.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/services/stock_price.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/services/stock_price.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/test.db" beforeDir="false" afterPath="$PROJECT_DIR$/backend/test.db" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/routers/test_stocks_router.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/tests/routers/test_stocks_router.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/trading.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/trading.md" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;customColor&quot;: &quot;&quot;,
+  &quot;associatedIndex&quot;: 3
+}</component>
+  <component name="ProjectId" id="3F2bYvnGY40mqGiQdAZIYFfIZsU" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ASKED_SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "Python tests.pytest for backend.tests.routers.test_stocks_router.TestGetPopularStocks.executor": "Run",
+    "Python tests.pytest in test_stock_price_service.py.executor": "Run",
+    "Python tests.pytest in test_stocks_router.py.executor": "Run",
+    "Python.conftest.executor": "Run",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "feature/test__stocks__router.py,docstrings,trading.md"
+  }
+}]]></component>
+  <component name="RunManager">
+    <configuration name="pytest for backend.tests.routers.test_stocks_router.TestGetPopularStocks" type="tests" factoryName="py.test" temporary="true" nameIsGenerated="true">
+      <module name="tu-stock-exchange" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="DEBUG_JUST_MY_CODE" value="false" />
+      <option name="RUN_TOOL" value="" />
+      <option name="_new_keywords" value="&quot;&quot;" />
+      <option name="_new_parameters" value="&quot;&quot;" />
+      <option name="_new_additionalArguments" value="&quot;&quot;" />
+      <option name="_new_target" value="&quot;backend.tests.routers.test_stocks_router.TestGetPopularStocks&quot;" />
+      <option name="_new_targetType" value="&quot;PYTHON&quot;" />
+      <method v="2" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Python tests.pytest for backend.tests.routers.test_stocks_router.TestGetPopularStocks" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="796a6668-9a39-4021-94da-6a42e5fcd907" name="Changes" comment="" />
+      <created>1781276165938</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1781276165938</updated>
+    </task>
+    <servers />
+  </component>
+</project>
