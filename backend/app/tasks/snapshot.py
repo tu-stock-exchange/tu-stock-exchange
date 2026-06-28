@@ -10,7 +10,7 @@ from app.services.redis_client import get_redis
 from app.core.config import settings
 from app.utils.logger import logger
 from app.services.default_services import check_and_handle_bankruptcy
-
+from app.models.stock_price_history import StockPriceHistory
 
 async def _create_daily_snapshot_async():
     db = database.SyncSessionLocal()
@@ -49,6 +49,20 @@ async def _create_daily_snapshot_async():
             )
             db.add(snapshot)
             logger.info(f"Created snapshot for user {user.id}: ${net_worth:.2f}")
+
+        snapshot_time = datetime.utcnow()
+        seen_tickers = set()
+        all_holdings = db.query(models.Holding).all()
+        for holding in all_holdings:
+            if holding.ticker not in seen_tickers:
+                seen_tickers.add(holding.ticker)
+                price = await get_current_price(holding.ticker)
+                if price is not None:
+                    db.add(StockPriceHistory(
+                        ticker=holding.ticker,
+                        price=price,
+                        timestamp=snapshot_time,
+                    ))
 
         db.commit()
         logger.info(f"Created {len(users)} net worth snapshots")

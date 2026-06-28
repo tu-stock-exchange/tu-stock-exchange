@@ -5,6 +5,7 @@ from app.db.dependencies import get_db
 from pydantic import BaseModel
 from datetime import datetime
 from typing import List
+from app.schemas.holding_item import HoldingItem
 
 router = APIRouter()
 
@@ -13,7 +14,7 @@ class PortfolioHistoryItem(BaseModel):
     net_worth: float
     balance: float
     holdings_value: float
-    holdings: List[schemas.HoldingItem] = []
+    holdings: List[HoldingItem] = []
 
     class Config:
         orm_mode = True

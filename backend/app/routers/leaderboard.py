@@ -36,7 +36,7 @@ async def get_leaderboard(
         ticker_prices = {}
         
         for ticker in tickers:
-            price = get_current_price(ticker)
+            price = await get_current_price(ticker)
             ticker_prices[ticker] = price if price is not None else 0.0
 
         # Calculate portfolio values
