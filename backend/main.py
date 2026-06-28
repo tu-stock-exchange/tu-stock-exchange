@@ -11,6 +11,7 @@ from app.routers.trading import router as trading_router
 from app.routers.auto_trades import router as auto_trades_router
 from app.routers.stocks import router as stocks_router
 from app.routers.leaderboard_history import router as leaderboard_history_router
+from app.routers.portfolio import router as portfolio_router
 from app.services.redis_client import init_redis, close_redis, get_redis
 import os
 
@@ -72,6 +73,7 @@ app.include_router(trading_router, prefix="/api")
 app.include_router(auto_trades_router, prefix="/api")
 app.include_router(stocks_router, prefix="/api")
 app.include_router(leaderboard_history_router, prefix="/api")
+app.include_router(portfolio_router, prefix="/api")
 
 @app.get("/")
 def root():
