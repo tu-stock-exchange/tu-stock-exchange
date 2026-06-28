@@ -24,7 +24,7 @@ TICKER_NAMES = {
 # 1. Fetch all 20 stocks concurrently for maximum speed
 @router.get("/stocks/popular")
 async def get_popular_stocks():
-    # asyncio.gather runs all get_current_price calls at the exact same time
+    """Fetch live prices for all 20 popular tickers concurrently and return them as a list."""
     prices = await asyncio.gather(*[get_current_price(ticker) for ticker in POPULAR_TICKERS])
     
     stocks = []
@@ -42,6 +42,7 @@ async def get_popular_stocks():
 # 2. Search endpoint optimized for concurrency
 @router.get("/stocks/search")
 async def search_stocks(q: str = ""):
+    """Search popular stocks by ticker or company name and return matching results with live prices."""
     q = q.upper().strip()
     if not q:
         return {"results": []}
@@ -69,8 +70,8 @@ async def search_stocks(q: str = ""):
 # 3. Single stock endpoint
 @router.get("/stocks/{ticker}")
 async def get_stock(ticker: str):
+    """Return the name and current live price for a single stock ticker."""
     ticker = ticker.upper()
-    # Added 'await' here!
     price = await get_current_price(ticker)
     if price is None:
         raise HTTPException(status_code=404, detail=f"Could not find price for {ticker}")

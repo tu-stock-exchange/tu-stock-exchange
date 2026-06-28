@@ -19,8 +19,7 @@ class TradeRequest(BaseModel):
 
 @router.post("/trades/buy")
 async def buy_stock(trade: TradeRequest, current_user : User = Depends(get_current_user),db : Session = Depends(get_db)):
-
-    #find the user in database
+    """Purchase shares of a stock at the current live price, updating balance and holdings."""
     user = current_user
 
     if user.is_bankrupt:
@@ -91,7 +90,7 @@ async def buy_stock(trade: TradeRequest, current_user : User = Depends(get_curre
 
 @router.post("/trades/sell")
 async def sell_stock(trade: TradeRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-
+    """Sell shares of a held stock at the current live price, updating balance and holdings."""
     user = current_user
 
     if user.is_bankrupt:
@@ -150,6 +149,7 @@ async def sell_stock(trade: TradeRequest, current_user: User = Depends(get_curre
 
 @router.get("/portfolio")
 async def get_portfolio(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Return all current holdings with cost basis, live value, and profit/loss for each position."""
     user = current_user
     holdings = db.query(Holding).filter(Holding.user_id == user.id).all()
 
@@ -187,6 +187,7 @@ async def get_portfolio(current_user: User = Depends(get_current_user), db: Sess
 
 @router.get("/trades/history")
 async def get_history(current_user: User = Depends(get_current_user), page: int = 1, limit: int = 10, db: Session = Depends(get_db)):
+    """Return a paginated list of the user's past buy and sell trades."""
     offset = (page-1)*limit
     trades = db.query(Trade).filter(Trade.user_id == current_user.id).offset(offset).limit(limit).all()
     return {"trades" : trades, 
@@ -196,6 +197,7 @@ async def get_history(current_user: User = Depends(get_current_user), page: int 
 
 @router.get('/portfolio/networth')
 async def get_networth(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Return the user's total net worth as the sum of cash balance and current market value of all holdings."""
     user = current_user
     holdings = db.query(Holding).filter(Holding.user_id == user.id).all()
 
