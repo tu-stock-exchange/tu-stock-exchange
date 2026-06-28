@@ -243,8 +243,3 @@ The `docs/` folder has deeper write-ups for individual features:
 | `docs/db_schema.md` | ✅ Complete |
 | `docs/api.md` | ⚠️ Partial |
 | `docs/trading.md`, `docs/leaderboard.md`, `docs/portfolio.md`, `docs/auto_trades.md`, `docs/testing.md` | 📝 Placeholder, not yet written |
-
-## Known Gaps
-
-- `app/routers/portfolio.py` (a `GET /users/{id}/portfolio/history` endpoint) and its backing `holding_history` table exist in the codebase but are **not yet wired into `main.py`** — not currently reachable through the running API.
-- The `stock_price_history` table is modeled but nothing currently writes to it.
