@@ -13,15 +13,28 @@ def get_leaderboard_history(
     db: Session = Depends(get_db),
     days: int = 30
 ):
-    """
-    Returns historical leaderboard data showing how user rankings have changed over time.
-    
-    For each timestamp in the history:
-    - Returns the top users by net worth
-    - Shows ranking position and portfolio value
-    
-    Parameters:
-    - days: Number of days of history to return (default: 30)
+    """Build a time series of leaderboard rankings from net worth history.
+
+    For each distinct timestamp recorded in net worth history within the
+    requested window, ranks users by net worth in descending order,
+    assigns each a 1-based rank, and keeps only the top 10 users for
+    that timestamp. The resulting snapshots are returned in ascending
+    chronological order (oldest first).
+
+    Args:
+        db: Database session used to query net worth history and users.
+        days: Number of days of history to include, counting back from
+            the current time. Defaults to 30.
+
+    Returns:
+        list[LeaderboardHistoryItem]: One entry per timestamp found in
+        the window, each containing the ``timestamp`` and up to 10
+        ranked ``LeaderboardItem`` entries (``user_id``, ``username``,
+        ``portfolio_value``, ``rank``).
+
+    Raises:
+        HTTPException: With status code 500 if an unexpected error
+            occurs while building the leaderboard history.
     """
     try:
         # Calculate date range

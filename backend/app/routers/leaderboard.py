@@ -13,6 +13,28 @@ async def get_leaderboard(
     db: Session = Depends(get_db),
 ):
 
+    """Calculate live portfolio rankings and return the top 5 users.
+
+    Each user's portfolio value is computed as cash balance plus the
+    market value of all holdings (quantity x current price). Live prices
+    are looked up once per unique ticker across all holdings to avoid
+    redundant calls; a ticker whose price cannot be fetched contributes
+    0.0 to that holding's value rather than raising an error. Users are
+    then ranked by descending portfolio value.
+
+    Args:
+        db: Database session used to query users and holdings.
+
+    Returns:
+        list[LeaderboardItem]: The top 5 users ordered by portfolio
+        value (highest first), each with ``user_id``, ``username``, and
+        ``portfolio_value`` (rounded to 2 decimal places).
+
+    Raises:
+        HTTPException: With status code 500 if an unexpected error
+            occurs while building the leaderboard.
+    """
+
     try:
         users = db.query(
             User.id,
