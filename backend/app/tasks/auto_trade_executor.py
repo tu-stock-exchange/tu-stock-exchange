@@ -6,6 +6,14 @@ from app.models.trade import Trade
 from app.services.stock_price import get_current_price
 
 def check_auto_trades():
+    """Check all active auto trades and execute any whose target price condition is met.
+
+    Runs every hour via the APScheduler background scheduler. For each active
+    auto trade, fetches the current market price and executes a buy or sell if
+    the condition is met (buy: price <= target, sell: price >= target). Skips
+    trades with unavailable prices, bankrupt users, or insufficient funds.
+    Sets is_active = False after a successful execution.
+    """
     db = database.SyncSessionLocal()
 
     try: 

@@ -16,7 +16,7 @@ class AutoTradeRequest(BaseModel):
 
 @router.post("/auto-trades")
 def create_auto_trade(request: AutoTradeRequest, current_user : User = Depends(get_current_user), db : Session = Depends(get_db)):
-    
+    """Create a new auto trade rule that will execute when the target price is reached."""
     new_auto_trade = AutoTrade(
         user_id = current_user.id, 
         ticker = request.ticker, 
@@ -33,6 +33,7 @@ def create_auto_trade(request: AutoTradeRequest, current_user : User = Depends(g
 
 @router.get("/auto-trades")
 def get_auto_trades(current_user : User = Depends(get_current_user), db : Session = Depends(get_db)):
+    """Return all active auto trade rules for the current user."""
     auto_trades = db.query(AutoTrade).filter(
         AutoTrade.user_id == current_user.id,
         AutoTrade.is_active == True
@@ -41,7 +42,7 @@ def get_auto_trades(current_user : User = Depends(get_current_user), db : Sessio
 
 @router.delete("/auto-trades/{auto_trade_id}")
 def delete_auto_trade(auto_trade_id : int, current_user : User = Depends(get_current_user), db : Session = Depends(get_db)):
-
+    """Deactivate an auto trade rule by setting is_active to False (soft delete)."""
     auto_trade = db.query(AutoTrade).filter(AutoTrade.id == auto_trade_id, AutoTrade.user_id == current_user.id).first()
     
     if not auto_trade:
