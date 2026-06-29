@@ -19,11 +19,11 @@ async def get_current_price(ticker: str) -> float | None:
         pass
 
     try:
-        response = requests.get(
-            FINNHUB_URL,
-            params={"symbol": ticker, "token": settings.FINNHUB_API_KEY},
-            timeout=5,
-        )
+        async with httpx.AsyncClient(timeout=5) as client:
+            response = await client.get(
+                FINNHUB_URL,
+                params={"symbol": ticker, "token": settings.FINNHUB_API_KEY},
+            )
         data = response.json()
         price = data.get("c")
         if not price or float(price) <= 0:
