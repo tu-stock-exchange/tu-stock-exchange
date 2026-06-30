@@ -26,7 +26,6 @@ TICKER_NAMES = {
 async def get_popular_stocks():
     """Fetch live prices for all 20 popular tickers concurrently and return them as a list."""
     prices = await asyncio.gather(*[get_current_price(ticker) for ticker in POPULAR_TICKERS])
-    
     stocks = []
     # zip() pairs each ticker with its corresponding fetched price
     for ticker, price in zip(POPULAR_TICKERS, prices):

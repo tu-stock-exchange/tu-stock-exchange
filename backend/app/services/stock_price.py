@@ -1,6 +1,6 @@
-import requests
 from app.services.redis_client import get_redis
 from app.core.config import settings
+import httpx
 
 CACHE_TTL = 3600  # 1 hour
 FINNHUB_URL = "https://finnhub.io/api/v1/quote"
@@ -34,5 +34,9 @@ async def get_current_price(ticker: str) -> float | None:
         except Exception:
             pass
         return price
-    except Exception:
+    except NameError as e:
+        print(f"NameError inside try: {e}")
+        return None
+    except Exception as e:
+        print(f"General error: {e}")
         return None
