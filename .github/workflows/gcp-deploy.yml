@@ -66,7 +66,7 @@ jobs:
       - name: Build frontend image with backend URL
         run: |
           docker build \
-            --build-arg VUE_APP_API_BASE_URL=${{ steps.get-backend-url.outputs.url }} \
+            --build-arg VITE_API_BASE_URL=${{ steps.get-backend-url.outputs.url }}/api \
             -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/frontend/stock-frontend:${{ github.sha }} \
             ./frontend
           docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/frontend/stock-frontend:${{ github.sha }}
