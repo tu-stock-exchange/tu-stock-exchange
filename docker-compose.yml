@@ -74,8 +74,12 @@ services:
     container_name: stock_exchange_frontend
     ports:
       - "8080:8080"
-#    environment:
-#      VUE_APP_API_BASE_URL: http://localhost:8000
+    # Vite bakes this in at build time (not a runtime env var), so it must be
+    # passed as a build arg, not under `environment:`. Left unset here since
+    # the code's localhost:8000/api fallback is correct for local dev.
+    # build:
+    #   args:
+    #     VITE_API_BASE_URL: http://localhost:8000/api
     networks:
       - stock_net
     restart: unless-stopped
