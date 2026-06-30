@@ -29,9 +29,14 @@ yarn-error.log*
 # VS Code
 .vscode/
 
+# JetBrains IDEs
+.idea/
+
 # Mac system files
 .DS_Store
 
 # Docker
 *.log
+
+# Databases
 *.db
