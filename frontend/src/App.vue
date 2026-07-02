@@ -1,13 +1,35 @@
 <script setup>
-import { RouterLink, RouterView } from 'vue-router'
+import { ref, watch } from 'vue'
+import { RouterLink, RouterView, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import api from '@/api/axiosInstance'
 
 const authStore = useAuthStore()
+const route = useRoute()
+const netWorth = ref(null)
+
+async function refreshNetWorth() {
+  if (!authStore.isLoggedIn) {
+    netWorth.value = null
+    return
+  }
+  try {
+    const response = await api.get('/portfolio')
+    netWorth.value = (response.data.cash_balance ?? 0) + (response.data.total_current_value ?? 0)
+  } catch (e) {
+    netWorth.value = null
+  }
+}
+
+// refresh whenever the user navigates, so the balance stays up to date after trades
+watch(() => route.fullPath, refreshNetWorth, { immediate: true })
 </script>
 
 <template>
   <nav class="w-full flex items-center gap-6 px-10 py-4 border-b border-zinc-800 bg-zinc-950">
-    <span class="text-white font-bold text-lg mr-4">TU Stock Exchange</span>
+    <span class="text-white font-bold text-lg mr-4 flex items-center gap-2">
+      <span aria-hidden="true">📈</span> StockGame
+    </span>
 
     <RouterLink to="/market" class="nav-link">Market</RouterLink>
     <RouterLink to="/leaderboard" class="nav-link">Leaderboard</RouterLink>
@@ -19,8 +41,14 @@ const authStore = useAuthStore()
       <RouterLink to="/profile" class="nav-link">Profile</RouterLink>
     </template>
 
-    <div class="ml-auto flex gap-4">
+    <div class="ml-auto flex items-center gap-4">
       <template v-if="authStore.isLoggedIn">
+        <span
+          v-if="netWorth !== null"
+          class="flex items-center gap-1.5 bg-zinc-900 border border-zinc-800 text-yellow-500 font-semibold text-sm px-3 py-1.5 rounded-xl"
+        >
+          <span aria-hidden="true">💰</span> ${{ netWorth.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
+        </span>
         <span class="text-zinc-500 text-sm self-center">{{ authStore.user?.username }}</span>
         <button @click="authStore.logout()" class="nav-link">Logout</button>
       </template>
