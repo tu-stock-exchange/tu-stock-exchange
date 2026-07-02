@@ -6,23 +6,23 @@
         v-model="search"
         type="text"
         placeholder="Search stocks..."
-        class="border border-gray-700 bg-zinc-900 text-white p-3 rounded-2xl w-full mb-6 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+        class="border border-zinc-800 bg-zinc-900 text-white p-3 rounded-xl w-full mb-6 focus:outline-none focus:ring-2 focus:ring-yellow-500"
       />
     </div>
 
-    <div v-if="loading" class="text-gray-400">Loading stocks...</div>
+    <div v-if="loading" class="text-zinc-400">Loading stocks...</div>
     <div v-else-if="error" class="text-red-400">{{ error }}</div>
 
     <div v-else class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
       <div
         v-for="stock in filteredStocks"
         :key="stock.ticker"
-        class="w-full border border-gray-700 rounded-2xl p-6 shadow-md hover:shadow-xl transition bg-gradient-to-br from-gray-900 to-blue-950"
+        class="w-full border border-zinc-800 rounded-xl p-6 shadow-md hover:shadow-xl transition bg-zinc-900"
       >
         <div class="flex justify-between items-start mb-6">
           <div>
             <h2 class="font-bold text-3xl text-white">{{ stock.ticker }}</h2>
-            <p class="text-gray-400 text-lg">{{ stock.name }}</p>
+            <p class="text-zinc-400 text-lg">{{ stock.name }}</p>
           </div>
           <p class="font-bold text-2xl text-yellow-400">${{ stock.price.toFixed(2) }}</p>
         </div>
@@ -46,7 +46,7 @@
       class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50"
       @click.self="modal.open = false"
     >
-      <div class="bg-zinc-900 border border-zinc-700 rounded-2xl p-8 w-full max-w-md">
+      <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-8 w-full max-w-md">
         <h2 class="text-2xl font-bold text-white mb-1">
           {{ modal.type === 'buy' ? 'Buy' : 'Sell' }} {{ modal.stock?.ticker }}
         </h2>
