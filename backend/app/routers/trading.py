@@ -28,16 +28,12 @@ async def buy_stock(trade: TradeRequest, current_user : User = Depends(get_curre
     price = await get_current_price(trade.ticker)
     if price is None:
         raise HTTPException(status_code=503, detail=f"Could not fetch price for {trade.ticker}")
-    total_cost = price * trade.quantity
+    total_cost = round(price * trade.quantity, 2)
 
     if user.balance < total_cost:
-        raise HTTPException(
-            status_code = 400,
-            detail = f"Insufficient funds. Need ${total_cost}, have ${user.balance}"
-        )
+        raise HTTPException(400, detail=f"Insufficient funds. Need ${total_cost}, have ${user.balance}")    
     
-    
-    user.balance -= total_cost
+    user.balance = round(user.balance - total_cost, 2)
 
     new_trade = Trade(
     user_id=user.id,
@@ -73,10 +69,10 @@ async def buy_stock(trade: TradeRequest, current_user : User = Depends(get_curre
     db.commit()
 
     holdings = db.query(Holding).filter(Holding.user_id == user.id).all()
-    total_stock_value = sum(
-        h.quantity * (await get_current_price(h.ticker) or h.average_buy_price)
-        for h in holdings
-    )
+    total_stock_value = 0.0
+    for h in holdings:
+        current_price = await get_current_price(h.ticker)
+        total_stock_value += h.quantity * (current_price or h.average_buy_price)
     await check_and_handle_bankruptcy(user, user.balance + total_stock_value, db)
 
     return {
@@ -110,7 +106,7 @@ async def sell_stock(trade: TradeRequest, current_user: User = Depends(get_curre
     price = await get_current_price(trade.ticker)
     if price is None:
         raise HTTPException(status_code=503, detail=f"Could not fetch price for {trade.ticker}")
-    total_value = price * trade.quantity
+    total_value = round(price * trade.quantity, 2)
 
     new_trade = Trade(
         user_id=user.id,
@@ -122,8 +118,7 @@ async def sell_stock(trade: TradeRequest, current_user: User = Depends(get_curre
     )
     db.add(new_trade)
 
-    user.balance += total_value
-
+    user.balance = round(user.balance + total_value, 2)
 
     holding.quantity -= trade.quantity
     if holding.quantity == 0:
@@ -132,10 +127,10 @@ async def sell_stock(trade: TradeRequest, current_user: User = Depends(get_curre
     db.commit()
 
     holdings = db.query(Holding).filter(Holding.user_id == user.id).all()
-    total_stock_value = sum(
-        h.quantity * (await get_current_price(h.ticker) or h.average_buy_price)
-        for h in holdings
-    )
+    total_stock_value = 0.0
+    for h in holdings:
+        current_price = await get_current_price(h.ticker)
+        total_stock_value += h.quantity * (current_price or h.average_buy_price)
     await check_and_handle_bankruptcy(user, user.balance + total_stock_value, db)
 
     return {
