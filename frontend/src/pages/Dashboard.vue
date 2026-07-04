@@ -16,6 +16,10 @@ const cash = ref(0)         // cash balance from API response
 const netWorth = ref(0)     // total net worth from API response
 const startingBalance = 10000  // fixed starting capital (no need for ref, never changes)
 
+const autoTradesCount = ref(0)   // number of active auto-trade rules
+const todayChange = ref(null)    // net worth change vs the last recorded snapshot
+const todayChangePercent = ref(null)
+
 // computed() is like a @Getter that automatically recalculates
 // when any ref() it depends on changes — no need to call it manually
 // portfolioValue recalculates whenever portfolio.value changes
@@ -60,6 +64,32 @@ onMounted(async () => {
     // always hide the loading spinner when we're done
     loading.value = false
   }
+
+  // Active auto-trades count, for the "Auto orders" summary card
+  try {
+    const autoTradesResponse = await api.get('/auto-trades')
+    autoTradesCount.value = (autoTradesResponse.data.auto_trades ?? []).length
+  } catch (e) {
+    autoTradesCount.value = 0
+  }
+
+  // Today's change: compare live net worth against the most recent saved snapshot
+  try {
+    if (authStore.user?.id) {
+      const historyResponse = await api.get(`/users/${authStore.user.id}/portfolio/history`)
+      const history = historyResponse.data ?? []
+      if (history.length > 0) {
+        const previousNetWorth = history[history.length - 1].net_worth
+        if (previousNetWorth > 0) {
+          todayChange.value = netWorth.value - previousNetWorth
+          todayChangePercent.value = ((todayChange.value / previousNetWorth) * 100).toFixed(2)
+        }
+      }
+    }
+  } catch (e) {
+    todayChange.value = null
+    todayChangePercent.value = null
+  }
 })
 </script>
 
@@ -84,7 +114,7 @@ onMounted(async () => {
       </div>
 
       <!-- summary cards -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
 
         <div class="rounded-xl p-6 bg-zinc-900 border border-zinc-800">
           <p class="text-xs uppercase tracking-widest text-zinc-500 mb-3">Cash balance</p>
@@ -107,11 +137,42 @@ onMounted(async () => {
 
       </div>
 
-      <!-- portfolio table -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+
+        <div class="rounded-xl p-6 bg-zinc-900 border border-zinc-800">
+          <p class="text-xs uppercase tracking-widest text-zinc-500 mb-3">Today's change</p>
+          <template v-if="todayChange !== null">
+            <p :class="todayChange >= 0 ? 'text-emerald-400' : 'text-red-400'" class="text-3xl font-semibold">
+              {{ todayChange >= 0 ? '+' : '' }}${{ todayChange.toFixed(2) }}
+            </p>
+            <p :class="todayChange >= 0 ? 'text-emerald-400' : 'text-red-400'" class="text-sm mt-2 font-medium">
+              {{ todayChangePercent >= 0 ? '+' : '' }}{{ todayChangePercent }}% vs yesterday
+            </p>
+          </template>
+          <p v-else class="text-zinc-500 text-sm mt-1">Not enough history yet</p>
+        </div>
+
+        <div class="rounded-xl p-6 bg-zinc-900 border border-zinc-800">
+          <p class="text-xs uppercase tracking-widest text-zinc-500 mb-3">Positions</p>
+          <p class="text-3xl font-semibold text-white">{{ portfolio.length }}</p>
+          <p class="text-zinc-500 text-sm mt-2">{{ portfolio.length === 1 ? 'stock' : 'stocks' }}</p>
+        </div>
+
+        <div class="rounded-xl p-6 bg-zinc-900 border border-zinc-800">
+          <p class="text-xs uppercase tracking-widest text-zinc-500 mb-3">Auto orders</p>
+          <p class="text-3xl font-semibold text-white">{{ autoTradesCount }}</p>
+          <p class="text-zinc-500 text-sm mt-2">active</p>
+        </div>
+
+      </div>
+
+      <!-- portfolio table (quick glance only — full breakdown lives on the Portfolio page) -->
       <div class="rounded-xl bg-zinc-900 border border-zinc-800 overflow-hidden">
         <div class="px-6 py-5 border-b border-zinc-800 flex items-center justify-between">
           <h2 class="text-base font-semibold text-white uppercase tracking-widest">Portfolio summary</h2>
-          <span class="text-xs text-yellow-600 uppercase tracking-widest">{{ portfolio.length }} positions</span>
+          <RouterLink to="/portfolio" class="text-xs text-yellow-600 hover:text-yellow-500 uppercase tracking-widest">
+            View full portfolio →
+          </RouterLink>
         </div>
 
         <p v-if="portfolio.length === 0" class="p-6 text-zinc-500">

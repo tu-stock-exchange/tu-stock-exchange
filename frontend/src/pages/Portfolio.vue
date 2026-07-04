@@ -70,6 +70,7 @@ onMounted(async () => {
               <th class="px-6 py-3 text-xs uppercase tracking-widest text-zinc-500">Current</th>
               <th class="px-6 py-3 text-xs uppercase tracking-widest text-zinc-500">Value</th>
               <th class="px-6 py-3 text-xs uppercase tracking-widest text-zinc-500">P&L</th>
+              <th class="px-6 py-3 text-xs uppercase tracking-widest text-zinc-500"></th>
             </tr>
           </thead>
           <tbody>
@@ -89,6 +90,11 @@ onMounted(async () => {
               >
                 {{ h.pnl >= 0 ? '+' : '' }}${{ h.pnl?.toFixed(2) }}
                 <span class="text-xs ml-1">({{ h.pnl_percent?.toFixed(2) }}%)</span>
+              </td>
+              <td class="px-6 py-4 text-right">
+                <RouterLink :to="`/market?ticker=${h.ticker}&action=sell`" class="text-red-400 hover:text-red-300 text-sm font-medium whitespace-nowrap">
+                  Sell →
+                </RouterLink>
               </td>
             </tr>
           </tbody>

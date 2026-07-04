@@ -6,8 +6,22 @@
         v-model="search"
         type="text"
         placeholder="Search stocks..."
-        class="border border-zinc-800 bg-zinc-900 text-white p-3 rounded-xl w-full mb-6 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+        class="border border-zinc-800 bg-zinc-900 text-white p-3 rounded-xl w-full mb-4 focus:outline-none focus:ring-2 focus:ring-yellow-500"
       />
+
+      <div class="flex flex-wrap gap-2">
+        <button
+          v-for="cat in categories"
+          :key="cat"
+          @click="activeCategory = cat"
+          class="px-4 py-2 rounded-xl text-sm font-medium transition"
+          :class="activeCategory === cat
+            ? 'bg-yellow-500 text-black'
+            : 'bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700'"
+        >
+          {{ cat }}
+        </button>
+      </div>
     </div>
 
     <div v-if="loading" class="text-zinc-400">Loading stocks...</div>
@@ -46,10 +60,22 @@
       class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50"
       @click.self="modal.open = false"
     >
-      <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-8 w-full max-w-md">
-        <h2 class="text-2xl font-bold text-white mb-1">
-          {{ modal.type === 'buy' ? 'Buy' : 'Sell' }} {{ modal.stock?.ticker }}
-        </h2>
+      <div class="bg-zinc-900 border border-zinc-800 rounded-xl w-full max-w-md overflow-hidden">
+        <div
+          class="flex items-center justify-between px-8 py-5"
+          :class="modal.type === 'buy' ? 'bg-emerald-400' : 'bg-red-400'"
+        >
+          <h2 class="text-xl font-bold text-black">
+            {{ modal.type === 'buy' ? 'Buy' : 'Sell' }} {{ modal.stock?.ticker }}
+          </h2>
+          <button
+            @click="modal.open = false"
+            class="text-black/70 hover:text-black text-xl leading-none font-bold"
+            aria-label="Close"
+          >✕</button>
+        </div>
+
+        <div class="p-8">
         <p class="text-zinc-400 mb-6">Current price: <span class="text-yellow-400 font-semibold">${{ modal.stock?.price.toFixed(2) }}</span></p>
 
         <label class="text-zinc-400 text-sm uppercase tracking-widest">Quantity</label>
@@ -88,6 +114,7 @@
             {{ modal.loading ? 'Processing...' : 'Confirm' }}
           </button>
         </div>
+        </div>
       </div>
     </div>
   </div>
@@ -95,16 +122,31 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import api from '@/api/axiosInstance'
 
 const router = useRouter()
+const route = useRoute()
 const authStore = useAuthStore()
 const search = ref('')
 const stocks = ref([])
 const loading = ref(true)
 const error = ref(null)
+
+// TODO: temporary client-side categorization until the backend provides real
+// sector data (see PR #36 "hardcoded stocks picks across different categories").
+// Only categories that actually match our current 20 tickers are included —
+// there are no Finance/Energy/Healthcare stocks in the popular list yet.
+const TICKER_CATEGORIES = {
+  AAPL: 'Tech', MSFT: 'Tech', GOOGL: 'Tech', NVDA: 'Tech', META: 'Tech',
+  ADBE: 'Tech', CRM: 'Tech', INTC: 'Tech', AMD: 'Tech', PYPL: 'Tech',
+  NFLX: 'Entertainment', DIS: 'Entertainment', SPOT: 'Entertainment', SNAP: 'Entertainment',
+  AMZN: 'Consumer', TSLA: 'Consumer', UBER: 'Consumer', SHOP: 'Consumer', BABA: 'Consumer', SQ: 'Consumer',
+}
+
+const categories = ['All', 'Tech', 'Entertainment', 'Consumer']
+const activeCategory = ref('All')
 
 const modal = ref({
   open: false,
@@ -125,14 +167,27 @@ onMounted(async () => {
   } finally {
     loading.value = false
   }
+
+  // Deep-link support: /market?ticker=AAPL&action=sell opens the modal directly
+  // (used by the "Sell →" link on the Portfolio page)
+  const queryTicker = route.query.ticker
+  const queryAction = route.query.action === 'sell' ? 'sell' : 'buy'
+  if (queryTicker) {
+    const stock = stocks.value.find(s => s.ticker === queryTicker)
+    if (stock) {
+      openModal(stock, queryAction)
+    }
+  }
 })
 
 const filteredStocks = computed(() => {
   const q = search.value.toLowerCase()
-  if (!q) return stocks.value
-  return stocks.value.filter(
-    s => s.ticker.toLowerCase().includes(q) || s.name.toLowerCase().includes(q)
-  )
+  return stocks.value.filter(s => {
+    const matchesSearch = !q || s.ticker.toLowerCase().includes(q) || s.name.toLowerCase().includes(q)
+    const matchesCategory = activeCategory.value === 'All'
+      || TICKER_CATEGORIES[s.ticker] === activeCategory.value
+    return matchesSearch && matchesCategory
+  })
 })
 
 function openModal(stock, type) {
