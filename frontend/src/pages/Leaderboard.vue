@@ -1,4 +1,3 @@
-
 <template>
   <div class="p-8 w-full max-w-6xl mx-auto">
     <h1 class="text-4xl font-bold mb-2 text-white">Leaderboard</h1>
@@ -7,46 +6,57 @@
     <div v-if="loading" class="text-gray-400">Loading...</div>
     <div v-else-if="error" class="text-red-400">{{ error }}</div>
 
-    <div v-else class="flex gap-6 items-start">
-      <!-- bar chart -->
-      <div class="rounded-xl bg-zinc-900 border border-zinc-800 p-6 w-2/5">
-        <LeaderboardChart :players="chartData" />
+    <div v-else>
+      <div class="flex gap-6 items-start mb-6">
+        <!-- bar chart -->
+        <div class="rounded-xl bg-zinc-900 border border-zinc-800 p-6 w-2/5">
+          <LeaderboardChart :players="chartData" />
+        </div>
+
+        <!-- table -->
+        <div class="rounded-xl bg-zinc-900 border border-zinc-800 overflow-hidden w-3/5">
+          <div class="px-6 py-5 border-b border-zinc-800">
+            <h2 class="text-base font-semibold text-white uppercase tracking-widest">Rankings</h2>
+          </div>
+          <table class="w-full">
+            <thead>
+              <tr class="text-left border-b border-zinc-800">
+                <th class="px-6 py-3 text-xs uppercase tracking-widest text-zinc-500">Rank</th>
+                <th class="px-6 py-3 text-xs uppercase tracking-widest text-zinc-500">Trader</th>
+                <th class="px-6 py-3 text-xs uppercase tracking-widest text-zinc-500">Net Worth</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="(user, index) in users"
+                :key="user.user_id"
+                class="border-b border-zinc-800 transition"
+                :class="user.user_id === currentUserId ? 'bg-yellow-900/30' : 'hover:bg-zinc-800'"
+              >
+                <td class="px-6 py-4 text-zinc-400">
+                  <span v-if="index === 0">🥇</span>
+                  <span v-else-if="index === 1">🥈</span>
+                  <span v-else-if="index === 2">🥉</span>
+                  <span v-else class="text-zinc-500">{{ index + 1 }}</span>
+                </td>
+                <td class="px-6 py-4 font-medium text-white">
+                  {{ user.username }}
+                  <span v-if="user.user_id === currentUserId" class="ml-2 text-xs text-yellow-500">(you)</span>
+                </td>
+                <td class="px-6 py-4 text-emerald-400 font-semibold">${{ user.portfolio_value?.toLocaleString() }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      <!-- table -->
-      <div class="rounded-xl bg-zinc-900 border border-zinc-800 overflow-hidden w-3/5">
-        <div class="px-6 py-5 border-b border-zinc-800">
-          <h2 class="text-base font-semibold text-white uppercase tracking-widest">Rankings</h2>
-        </div>
-        <table class="w-full">
-          <thead>
-            <tr class="text-left border-b border-zinc-800">
-              <th class="px-6 py-3 text-xs uppercase tracking-widest text-zinc-500">Rank</th>
-              <th class="px-6 py-3 text-xs uppercase tracking-widest text-zinc-500">Trader</th>
-              <th class="px-6 py-3 text-xs uppercase tracking-widest text-zinc-500">Net Worth</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="(user, index) in users"
-              :key="user.user_id"
-              class="border-b border-zinc-800 transition"
-              :class="user.user_id === currentUserId ? 'bg-yellow-900/30' : 'hover:bg-zinc-800'"
-            >
-              <td class="px-6 py-4 text-zinc-400">
-                <span v-if="index === 0">🥇</span>
-                <span v-else-if="index === 1">🥈</span>
-                <span v-else-if="index === 2">🥉</span>
-                <span v-else class="text-zinc-500">{{ index + 1 }}</span>
-              </td>
-              <td class="px-6 py-4 font-medium text-white">
-                {{ user.username }}
-                <span v-if="user.user_id === currentUserId" class="ml-2 text-xs text-yellow-500">(you)</span>
-              </td>
-              <td class="px-6 py-4 text-emerald-400 font-semibold">${{ user.portfolio_value?.toLocaleString() }}</td>
-            </tr>
-          </tbody>
-        </table>
+      <!-- "Your net worth" trend chart -->
+      <div
+        v-if="currentUserId && netWorthHistory.length > 1"
+        class="rounded-xl bg-zinc-900 border border-zinc-800 p-6"
+      >
+        <p class="text-xs uppercase tracking-widest text-zinc-500 mb-3">Your net worth</p>
+        <NetWorthChart :history="netWorthHistory" />
       </div>
     </div>
   </div>
@@ -56,12 +66,14 @@
 import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import LeaderboardChart from '../components/shared/LeaderboardChart.vue'
+import NetWorthChart from '../components/shared/NetWorthChart.vue'
 import api from '@/api/axiosInstance'
 
 const authStore = useAuthStore()
 const users = ref([])
 const loading = ref(true)
 const error = ref(null)
+const netWorthHistory = ref([])
 
 const currentUserId = computed(() => authStore.user?.id ?? null)
 
@@ -80,6 +92,16 @@ onMounted(async () => {
     error.value = 'Could not load leaderboard.'
   } finally {
     loading.value = false
+  }
+
+  // "Your net worth" trend chart — only relevant for the logged-in user, non-fatal if it fails
+  try {
+    if (currentUserId.value) {
+      const historyResponse = await api.get(`/users/${currentUserId.value}/portfolio/history`)
+      netWorthHistory.value = historyResponse.data ?? []
+    }
+  } catch (e) {
+    netWorthHistory.value = []
   }
 })
 </script>
