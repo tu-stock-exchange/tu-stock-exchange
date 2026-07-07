@@ -6,23 +6,23 @@ import api from '@/api/axiosInstance'
 
 const authStore = useAuthStore()
 const route = useRoute()
-const netWorth = ref(null)
+const cashBalance = ref(null)
 
-async function refreshNetWorth() {
+async function refreshCashBalance() {
   if (!authStore.isLoggedIn) {
-    netWorth.value = null
+    cashBalance.value = null
     return
   }
   try {
     const response = await api.get('/portfolio')
-    netWorth.value = (response.data.cash_balance ?? 0) + (response.data.total_current_value ?? 0)
+    cashBalance.value = response.data.cash_balance ?? 0
   } catch (e) {
-    netWorth.value = null
+    cashBalance.value = null
   }
 }
 
 // refresh whenever the user navigates, so the balance stays up to date after trades
-watch(() => route.fullPath, refreshNetWorth, { immediate: true })
+watch(() => route.fullPath, refreshCashBalance, { immediate: true })
 </script>
 
 <template>
@@ -30,24 +30,21 @@ watch(() => route.fullPath, refreshNetWorth, { immediate: true })
     <span class="text-white font-bold text-lg mr-4 flex items-center gap-2">
       <span aria-hidden="true">📈</span> StockGame
     </span>
-
     <RouterLink to="/market" class="nav-link">Market</RouterLink>
     <RouterLink to="/leaderboard" class="nav-link">Leaderboard</RouterLink>
-
     <template v-if="authStore.isLoggedIn">
       <RouterLink to="/dashboard" class="nav-link">Dashboard</RouterLink>
       <RouterLink to="/portfolio" class="nav-link">Portfolio</RouterLink>
       <RouterLink to="/auto-trades" class="nav-link">Auto-trades</RouterLink>
       <RouterLink to="/profile" class="nav-link">Profile</RouterLink>
     </template>
-
     <div class="ml-auto flex items-center gap-4">
       <template v-if="authStore.isLoggedIn">
         <span
-          v-if="netWorth !== null"
+          v-if="cashBalance !== null"
           class="flex items-center gap-1.5 bg-zinc-900 border border-zinc-800 text-yellow-500 font-semibold text-sm px-3 py-1.5 rounded-xl"
         >
-          <span aria-hidden="true">💰</span> ${{ netWorth.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
+          <span aria-hidden="true">💰</span> ${{ cashBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
         </span>
         <span class="text-zinc-500 text-sm self-center">{{ authStore.user?.username }}</span>
         <button @click="authStore.logout()" class="nav-link">Logout</button>
@@ -58,7 +55,6 @@ watch(() => route.fullPath, refreshNetWorth, { immediate: true })
       </template>
     </div>
   </nav>
-
   <main class="min-h-screen bg-zinc-950 text-white">
     <RouterView />
   </main>
@@ -73,22 +69,17 @@ watch(() => route.fullPath, refreshNetWorth, { immediate: true })
   padding-bottom: 4px;
   border-bottom: 2px solid transparent;  /* placeholder — unsichtbar */
 }
-
 /* hover */
 .nav-link:hover {
   color: #EAB308;
   border-bottom: 2px solid #EAB308;
 }
-
 /* actual page */
 .nav-link.router-link-active {
   color: #EAB308;
   border-bottom: 2px solid #EAB308;
-
 }
-
 </style>
-
 <!--  -->
 <!--  -->
 <!--  -->
