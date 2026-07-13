@@ -1,14 +1,12 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import api from '@/api/axiosInstance'
-import { useAuthStore } from '@/stores/auth'
-import NetWorthChart from '@/components/shared/NetWorthChart.vue'
+import { useRoute } from 'vue-router'
 
-const authStore = useAuthStore()
 const portfolio = ref(null)
 const loading = ref(true)
 const error = ref(null)
-const netWorthHistory = ref([])
+const route = useRoute()
 
 onMounted(async () => {
   try {
@@ -19,16 +17,12 @@ onMounted(async () => {
   } finally {
     loading.value = false
   }
+})
 
-  // Net worth history for the growth chart — non-fatal if it fails
-  try {
-    if (authStore.user?.id) {
-      const historyResponse = await api.get(`/users/${authStore.user.id}/portfolio/history`)
-      netWorthHistory.value = historyResponse.data ?? []
-    }
-  } catch (e) {
-    netWorthHistory.value = []
-  }
+// Add this: Dispatch trade event when component is mounted
+// (This ensures initial data is fresh)
+onMounted(() => {
+  window.dispatchEvent(new Event('TRADE_COMPLETED'))
 })
 </script>
 
@@ -60,20 +54,6 @@ onMounted(async () => {
             {{ portfolio.total_pnl >= 0 ? '+' : '' }}${{ portfolio.total_pnl?.toFixed(2) }}
           </p>
         </div>
-      </div>
-
-      <!-- net worth growth chart -->
-      <div
-        v-if="netWorthHistory.length > 1"
-        class="rounded-xl bg-zinc-900 border border-zinc-800 p-6 mb-8"
-      >
-        <NetWorthChart :history="netWorthHistory" />
-      </div>
-      <div
-        v-else
-        class="rounded-xl bg-zinc-900 border border-zinc-800 p-6 mb-8 text-zinc-500 text-sm"
-      >
-        Not enough history yet to show a net worth chart — check back after a day or two of trading.
       </div>
 
       <!-- holdings table -->
@@ -120,7 +100,11 @@ onMounted(async () => {
                 <span class="text-xs ml-1">({{ h.pnl_percent?.toFixed(2) }}%)</span>
               </td>
               <td class="px-6 py-4 text-right">
-                <RouterLink :to="`/market?ticker=${h.ticker}&action=sell`" class="text-red-400 hover:text-red-300 text-sm font-medium whitespace-nowrap">
+                <RouterLink 
+                  :to="`/market?ticker=${h.ticker}&action=sell`" 
+                  class="text-red-400 hover:text-red-300 text-sm font-medium whitespace-nowrap"
+                  @click="() => window.dispatchEvent(new Event('TRADE_COMPLETED'))"
+                >
                   Sell →
                 </RouterLink>
               </td>
