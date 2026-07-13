@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted, onUnmounted, provide } from 'vue'
 import { RouterLink, RouterView, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import api from '@/api/axiosInstance'
@@ -8,7 +8,8 @@ const authStore = useAuthStore()
 const route = useRoute()
 const netWorth = ref(null)
 
-async function refreshNetWorth() {
+// Centralized refresh function
+const refreshNetWorth = async () => {
   if (!authStore.isLoggedIn) {
     netWorth.value = null
     return
@@ -21,8 +22,28 @@ async function refreshNetWorth() {
   }
 }
 
-// refresh whenever the user navigates, so the balance stays up to date after trades
+// Refresh on route changes (existing behavior)
 watch(() => route.fullPath, refreshNetWorth, { immediate: true })
+
+// REAL-TIME TRADE REFRESH SYSTEM
+onMounted(() => {
+  // Listen for trade completion events
+  window.addEventListener('TRADE_COMPLETED', refreshNetWorth)
+  
+  // Also refresh when user logs in
+  authStore.$onAction(({ name, args, after }) => {
+    if (name === 'login') {
+      after(refreshNetWorth)
+    }
+  })
+})
+
+onUnmounted(() => {
+  window.removeEventListener('TRADE_COMPLETED', refreshNetWorth)
+})
+
+// Provide to children for direct refresh calls
+provide('refreshNetWorth', refreshNetWorth)
 </script>
 
 <template>
@@ -84,11 +105,5 @@ watch(() => route.fullPath, refreshNetWorth, { immediate: true })
 .nav-link.router-link-active {
   color: #EAB308;
   border-bottom: 2px solid #EAB308;
-
 }
-
 </style>
-
-<!--  -->
-<!--  -->
-<!--  -->
